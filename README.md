@@ -1,4 +1,4 @@
-# Pytorch Deep Learning Template
+<!-- # Pytorch Deep Learning Template
 ### A clean and simple template to kick start your next dl project 🚀🚀
 *Francesco Saverio Zuppichini*
 
@@ -12,15 +12,15 @@ In this article, we present you a deep learning template based on Pytorch. This 
 - auto-saving the best model
 - experiment tracking with [comet](https://www.comet.ml/)
 - logging using python [logging](https://docs.python.org/3/library/logging.html) module
-- a playground notebook to quick test/play around
+- a playground notebook to quick test/play around -->
 ## Installation
 Clone the repo and go inside it. Then, run:
 
 ```
-pip install -r requirements.txt
+pip install --upgrade -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
-### Motivation
+<!-- ### Motivation
 Let's face it, usually data scientists are not software engineers and they usually end up with spaghetti code, most of the time on a big unusable Jupiter-notebook. With this repo, I have proposed a clean example of how your code should be split and modularized to make scalability and sharability possible. In this example, we will try to classify Darth Vader and Luke Skywalker. We have 100 images per class gathered using google images. The dataset is [here](https://drive.google.com/open?id=1LyHJxUVjOgDIgGJL4MnDhA10xjejWuw7). You just have to extract it in this folder and run main.py. We are fine-tuning resnet18 and it should be able to reach > 90% accuracy in 5/10 epochs.
 ## Structure
 The template is inside `./template`.
@@ -123,4 +123,4 @@ Thank you for reading
 ## TODO 
 - [ ] one example for [lightning](https://github.com/williamFalcon/pytorch-lightning)
 - [ ] one example with [fastai](https://www.fast.ai/)
-- [ ] show how to setup anaconda 
+- [ ] show how to setup anaconda  -->
