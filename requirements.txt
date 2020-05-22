@@ -6,3 +6,4 @@ comet_ml==3.1.7
 matplotlib==3.2.1
 torchsummary==1.5.1
 Poutyne==0.7.2
+argcomplete==1.11.1
