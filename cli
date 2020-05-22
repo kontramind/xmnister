@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
+
+
+import argparse
+import argcomplete
+from argcomplete.completers import ChoicesCompleter
+
+from Project import Project
+
+
+def _args() -> argparse.Namespace:
+    project = Project()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--run",
+        help="command to run",
+        type=str,
+        required=True,
+        nargs=1,
+        choices=project.cli_commands,
+    ).completer=ChoicesCompleter(project.cli_commands)
+    argcomplete.autocomplete(parser)
+    return parser.parse_args()
+
+
+def data_download() -> None:
+    pass
+
+
+def data_visualize() -> None:
+    pass
+
+
+def train() -> None:
+    pass
+
+
+def test() -> None:
+    pass
+
+
+def infere() -> None:
+    pass
+
+
+if __name__ == '__main__':
+    args = _args()
+
+    if args.run == "data-download":
+        data_download()
+    elif args.run == "data-visualize":
+        data_visualize()
+    elif args.run == "train":
+        train()
+    elif args.run == "test":
+        test()
+    elif args.run == "infere":
+        infere()

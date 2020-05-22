@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+import typing
 
 
 @dataclass
@@ -7,9 +8,12 @@ class Project:
     """
     This class represents our project. It stores useful information about the structure, e.g. paths.
     """
+
     base_dir: Path = Path(__file__).parents[0]
     data_dir = base_dir / 'dataset'
     checkpoint_dir = base_dir / 'checkpoint'
+
+    cli_commands: typing.Tuple[str] = ('data-download', 'data-visualize', 'train', 'test', 'infer', )
 
     def __post_init__(self):
         # create the directories if they don't exist
