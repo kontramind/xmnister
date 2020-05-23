@@ -3,11 +3,17 @@
 
 
 import argparse
+import requests
 import argcomplete
+from tqdm import tqdm
+from logger import logging
 from argcomplete.completers import ChoicesCompleter
 
+from utils import show_dl
 from Project import Project
-
+from data import get_dataloaders
+from utils import data_download, data_preprocess
+from data.transformation import train_transform, val_transform
 
 def _args() -> argparse.Namespace:
     project = Project()
@@ -24,36 +30,55 @@ def _args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def data_download() -> None:
+def _data_inspect(usage: str) -> None:
+    train_dl, val_dl, test_dl = get_dataloaders(
+        train_dir=project.data_dir / "train",
+        val_dir=project.data_dir / "val",
+        test_dir=project.data_dir / "test",
+        val_transform=val_transform,
+        train_transform=train_transform,
+        batch_size=64,
+        pin_memory=True,
+        num_workers=4,
+    )
+    if usage == "train":
+        show_dl(train_dl)
+    elif usage == "test":
+        show_dl(test_dl)
+    elif usage == "val":
+        show_dl(val_dl)
+
+
+def _train() -> None:
     pass
 
 
-def data_visualize() -> None:
+def _test() -> None:
     pass
 
 
-def train() -> None:
-    pass
-
-
-def test() -> None:
-    pass
-
-
-def infere() -> None:
+def _infere() -> None:
     pass
 
 
 if __name__ == '__main__':
     args = _args()
+    project = Project()
 
-    if args.run == "data-download":
+    run_cmd = args.run[0]
+    if run_cmd == "data-download":
         data_download()
-    elif args.run == "data-visualize":
-        data_visualize()
-    elif args.run == "train":
-        train()
-    elif args.run == "test":
-        test()
-    elif args.run == "infere":
-        infere()
+    elif run_cmd == "data-preprocess":
+        data_preprocess(project.data_dir)
+    elif run_cmd == "data-inspect-train":
+        _data_inspect("train")
+    elif run_cmd == "data-inspect-test":
+        _data_inspect("test")
+    elif run_cmd == "data-inspect-val":
+        _data_inspect("val")
+    elif run_cmd == "train":
+        _train()
+    elif run_cmd == "test":
+        _test()
+    elif run_cmd == "infere":
+        _infere()
