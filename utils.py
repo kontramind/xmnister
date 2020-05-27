@@ -23,6 +23,7 @@ def _data_preprocess_test(dataset: str, data_dir: Path) -> None:
     unique_labels = np.unique(labels)
     image_counters = { label:0 for label in unique_labels}
     for image, label in zip(images, labels):
+        image = np.dstack((image,image,image))
         per_label_subdir = data_subdir/f"emnist_label_{label}"
         per_label_subdir.mkdir(parents=True, exist_ok=True)
         imsave(per_label_subdir/f"emnist_label_{label}_image_{image_counters[label]}.png", image)
@@ -46,6 +47,7 @@ def _data_preprocess_train(dataset: str, data_dir: Path) -> None:
     unique_labels = np.unique(labels)
     image_counters = { label:0 for label in unique_labels}
     for image, label in zip(val_images, val_labels):
+        image = np.dstack((image,image,image))
         per_label_subdir = val_data_subdir/f"emnist_label_{label}"
         per_label_subdir.mkdir(parents=True, exist_ok=True)
         imsave(per_label_subdir/f"emnist_label_{label}_image_{image_counters[label]}.png", image)
@@ -55,6 +57,7 @@ def _data_preprocess_train(dataset: str, data_dir: Path) -> None:
     train_labels = labels[:-test_data_size]
     image_counters = { label:0 for label in unique_labels}
     for image, label in zip(train_images, train_labels):
+        image = np.dstack((image,image,image))
         per_label_subdir = train_data_subdir/f"emnist_label_{label}"
         per_label_subdir.mkdir(parents=True, exist_ok=True)
         imsave(per_label_subdir/f"emnist_label_{label}_image_{image_counters[label]}.png", image)
