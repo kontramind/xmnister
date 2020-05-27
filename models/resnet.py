@@ -17,8 +17,8 @@ def resnet_finetune(model, n_classes):
 
 
 # replace the resnet18 function
-resnet18 = partial(resnet_finetune, resnet18(pretrained=True))
+resnet18 = partial(resnet_finetune, resnet18(pretrained=False))
 
 
 # replace the resnet34 function
-resnet34 = partial(resnet_finetune, resnet34(pretrained=True))
+resnet34 = partial(resnet_finetune, resnet34(pretrained=False))
