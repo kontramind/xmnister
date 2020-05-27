@@ -1,19 +1,29 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
 
-
+import os
+import time
 import argparse
 import requests
 import argcomplete
+import numpy as np
 from tqdm import tqdm
 from logger import logging
 from argcomplete.completers import ChoicesCompleter
 
+from comet_ml import Experiment
+from callbacks import CometCallback
+
 from utils import show_dl
 from Project import Project
+from models import resnet18, resnet34
+import torch.optim as optim
 from data import get_dataloaders
-from utils import data_download, data_preprocess
+from torchsummary import summary
+from utils import device, data_download, data_preprocess
 from data.transformation import train_transform, val_transform
+from poutyne.framework import Model
+from poutyne.framework.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
 
 def _args() -> argparse.Namespace:
     project = Project()
@@ -28,6 +38,10 @@ def _args() -> argparse.Namespace:
     ).completer=ChoicesCompleter(project.cli_commands)
     argcomplete.autocomplete(parser)
     return parser.parse_args()
+
+
+def _scrap() -> None:
+    pass
 
 
 def _data_inspect(usage: str) -> None:
@@ -50,11 +64,124 @@ def _data_inspect(usage: str) -> None:
 
 
 def _train() -> None:
-    pass
+    # our hyperparameters
+    params = {
+        'lr': 0.001,
+        'batch_size': 128,
+        'epochs': 11,
+        'model': 'resnet34'
+    }
+
+    logging.info(f'Using device={device} 🚀')
+
+    train_dl, val_dl, test_dl = get_dataloaders(
+        train_dir=project.data_dir / "train",
+        val_dir=project.data_dir / "val",
+        test_dir=project.data_dir / "test",
+        val_transform=val_transform,
+        train_transform=train_transform,
+        batch_size=params['batch_size'],
+        pin_memory=True,
+        num_workers=4,
+    )
+
+    # define our comet experiment
+    experiment = Experiment(api_key="Zol9Fqyert7ofMXZS7nbCWD4c", project_name="xmnister", workspace="kontramind")
+    experiment.log_parameters(params)
+
+    # create the model
+    cnn = resnet34(len(project.labels)).to(device)
+    # print the model summary to show useful information
+    logging.info(summary(cnn, (3, 224, 244)))
+    # define custom optimizer and instantiace the trainer `Model`
+    optimizer = optim.Adam(cnn.parameters(), lr=params['lr'])
+    model = Model(cnn, optimizer, "cross_entropy", batch_metrics=["accuracy"])
+    model.to(device)
+    # usually you want to reduce the lr on plateau and store the best model
+    callbacks = [
+        ReduceLROnPlateau(monitor="val_acc", patience=5, verbose=True),
+        ModelCheckpoint(str(project.checkpoint_dir / f"{time.time()}-model.pt"), save_best_only="True", verbose=True),
+        EarlyStopping(monitor="val_acc", patience=10, mode='max'),
+        CometCallback(experiment)
+    ]
+    model.fit_generator(
+        train_dl,
+        val_dl,
+        epochs=params['epochs'],
+        callbacks=callbacks,
+    )
+    # get the results on the test set
+    train_dl, val_dl, test_dl = get_dataloaders(
+        train_dir=project.data_dir / "train",
+        val_dir=project.data_dir / "val",
+        test_dir=project.data_dir / "test",
+        val_transform=val_transform,
+        train_transform=train_transform,
+        batch_size=params['batch_size'],
+        pin_memory=True,
+        num_workers=1,
+    )
+    loss, test_acc = model.evaluate_generator(generator=test_dl)
+    logging.info(f'loss=({loss})')
+    logging.info(f'test_acc=({test_acc})')
+    experiment.log_metric('test_acc', test_acc)
 
 
 def _test() -> None:
-    pass
+    # our hyperparameters
+    params = {
+        'lr': 0.001,
+        'batch_size': 3*128,
+        'epochs': 1,
+        'model': 'resnet34'
+    }
+
+    logging.info(f'Using device={device} 🚀')
+
+    project = Project()
+    checkpoints = sorted(project.checkpoint_dir.iterdir(), key=os.path.getmtime)
+    print(f"{checkpoints[-1]:}")
+    # create the model
+    cnn = resnet34(len(project.labels)).to(device)
+    # print the model summary to show useful information
+    logging.info(summary(cnn, (3, 224, 244)))
+    # define custom optimizer and instantiace the trainer `Model`
+    optimizer = optim.Adam(cnn.parameters(), lr=params['lr'])
+    model = Model(cnn, optimizer, "cross_entropy", batch_metrics=["accuracy"])
+    model.to(device)
+    model.load_weights(checkpoints[-1])
+    train_dl, val_dl, test_dl = get_dataloaders(
+        train_dir=project.data_dir / "train",
+        val_dir=project.data_dir / "val",
+        test_dir=project.data_dir / "test",
+        val_transform=val_transform,
+        train_transform=train_transform,
+        batch_size=params['batch_size'],
+        pin_memory=True,
+        num_workers=1,
+    )
+    y_pred_list = []
+    y_true_list = []
+    loss, test_acc, y_pred, y_true = model.evaluate_generator(generator=test_dl, return_pred=True, return_ground_truth=True)
+    for batch_pred, batch_true in zip(y_pred, y_true):
+        max_arg_idxs = np.argmax(batch_pred, axis=1)
+        for idx in max_arg_idxs:
+            vec = np.zeros((62,))
+            vec[idx] = 1
+            y_pred_list.append(vec.tolist())
+        for idx in batch_true:
+            vec = np.zeros((62,))
+            vec[idx] = 1
+            y_true_list.append(vec.tolist())
+
+    # define our comet experiment
+    experiment = Experiment(api_key="Zol9Fqyert7ofMXZS7nbCWD4c", project_name="xmnister", workspace="kontramind")
+    experiment.log_parameters(params)
+
+    logging.info(f'loss=({loss})')
+    logging.info(f'test_acc=({test_acc})')
+    experiment.log_confusion_matrix(y_true=y_true_list, y_predicted=y_pred_list, max_categories=100)
+    experiment.log_metric('test_acc', test_acc)
 
 
 def _infere() -> None:
@@ -82,3 +209,5 @@ if __name__ == '__main__':
         _test()
     elif run_cmd == "infere":
         _infere()
+    elif run_cmd == "scrap":
+        _scrap()
