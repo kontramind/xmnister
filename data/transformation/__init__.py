@@ -2,6 +2,7 @@ import numpy as np
 import torchvision.transforms as T
 from imgaug import augmenters as iaa
 
+from Project import Project
 
 class ImgAugTransform:
     """
@@ -10,24 +11,9 @@ class ImgAugTransform:
 
     def __init__(self):
         self.aug = iaa.Sequential([
-            iaa.Sometimes(0.2, iaa.GaussianBlur(sigma=(0, 3.0))),
-            # iaa.Sometimes(0.8, iaa.Sequential([
-            #     iaa.Fliplr(0.5),
-            #     iaa.Flipud(0.5)
-            # ])),
-            # iaa.Sometimes(0.5, iaa.Sequential([
-            #     iaa.Crop(percent=(0.1, 0.2))
-            # ])),
-            #iaa.LinearContrast((0.75, 1.5)),
-            iaa.Affine(rotate=(-5, 5), mode='symmetric'),
-            iaa.Sometimes(0.8,
-                          iaa.Affine(
-                            #   scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
-                              translate_percent={"x": (-0.05, 0.05), "y": (-0.05, 0.05)},
-                            #   rotate=(-5, 5),
-                            #   shear=(-5, 5)
-                          )),
-            iaa.AddToHueAndSaturation(value=(-10, 10), per_channel=True)
+            iaa.Affine(rotate=(-5, 5), mode='constant', cval=(0,0)),
+            iaa.Sometimes(0.2, iaa.GaussianBlur(sigma=(0, 1.0))),
+            iaa.Sometimes(0.8, iaa.Affine(translate_percent={"x": (-0.05, 0.05), "y": (-0.05, 0.05)}, )),
         ])
 
     def __call__(self, img):
@@ -36,9 +22,12 @@ class ImgAugTransform:
         return img
 
 
-val_transform = T.Compose([T.Resize((224, 224)),
+val_transform = T.Compose([T.Resize((Project().input_width, Project().input_height)),
+                           T.Grayscale(),
                            T.ToTensor()])
 
-train_transform = T.Compose([T.Resize((224, 224)),
+train_transform = T.Compose([T.Resize(((Project().input_width, Project().input_height))),
                              ImgAugTransform(),
+                             T.ToPILImage(),
+                             T.Grayscale(),
                              T.ToTensor()])

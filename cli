@@ -16,7 +16,7 @@ from callbacks import CometCallback
 
 from utils import show_dl
 from Project import Project
-from models import resnet18, resnet34
+from models import resnet9
 import torch.optim as optim
 from data import get_dataloaders
 from torchsummary import summary
@@ -44,6 +44,14 @@ def _scrap() -> None:
     pass
 
 
+def _summary() -> None:
+    # create our special resnet9
+    cnn = resnet9(len(project.labels)).to(device)
+    # print the model summary to show useful information
+    logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
+    pass
+
+
 def _data_inspect(usage: str) -> None:
     train_dl, val_dl, test_dl = get_dataloaders(
         train_dir=project.data_dir / "train",
@@ -68,8 +76,8 @@ def _train() -> None:
     params = {
         'lr': 0.001,
         'batch_size': 128,
-        'epochs': 11,
-        'model': 'resnet34'
+        'epochs': 21,
+        'model': 'resnet9'
     }
 
     logging.info(f'Using device={device} 🚀')
@@ -90,9 +98,9 @@ def _train() -> None:
     experiment.log_parameters(params)
 
     # create the model
-    cnn = resnet34(len(project.labels)).to(device)
+    cnn = resnet9(len(project.labels)).to(device)
     # print the model summary to show useful information
-    logging.info(summary(cnn, (3, 224, 244)))
+    logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
     # define custom optimizer and instantiace the trainer `Model`
     optimizer = optim.Adam(cnn.parameters(), lr=params['lr'])
     model = Model(cnn, optimizer, "cross_entropy", batch_metrics=["accuracy"])
@@ -131,9 +139,9 @@ def _test() -> None:
     # our hyperparameters
     params = {
         'lr': 0.001,
-        'batch_size': 3*128,
+        'batch_size': 128,
         'epochs': 1,
-        'model': 'resnet34'
+        'model': 'resnet9'
     }
 
     logging.info(f'Using device={device} 🚀')
@@ -142,9 +150,9 @@ def _test() -> None:
     checkpoints = sorted(project.checkpoint_dir.iterdir(), key=os.path.getmtime)
     print(f"{checkpoints[-1]:}")
     # create the model
-    cnn = resnet34(len(project.labels)).to(device)
+    cnn = resnet9(len(project.labels)).to(device)
     # print the model summary to show useful information
-    logging.info(summary(cnn, (3, 224, 244)))
+    logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
     # define custom optimizer and instantiace the trainer `Model`
     optimizer = optim.Adam(cnn.parameters(), lr=params['lr'])
     model = Model(cnn, optimizer, "cross_entropy", batch_metrics=["accuracy"])
@@ -203,6 +211,8 @@ if __name__ == '__main__':
         _data_inspect("test")
     elif run_cmd == "data-inspect-val":
         _data_inspect("val")
+    elif run_cmd == "summary":
+        _summary()
     elif run_cmd == "train":
         _train()
     elif run_cmd == "test":
