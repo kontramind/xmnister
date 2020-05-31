@@ -42,7 +42,7 @@ def _args() -> argparse.Namespace:
 
 def _scrap() -> None:
     cnn = xception(num_classes=len(project.labels), pretrained=False).to(device)
-    logging.info(summary(cnn, (3, 129, 129)))
+    logging.info(summary(cnn, (1, 129, 129)))
 
 
 def _summary() -> None:

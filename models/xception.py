@@ -120,18 +120,17 @@ class Xception(nn.Module):
 
         self.block1=Block(64,128,1,2,start_with_relu=False,grow_first=True)
         self.block2=Block(128,256,1,2,start_with_relu=True,grow_first=True)
-        self.block3=Block(256,728,1,2,start_with_relu=True,grow_first=True)
+        self.block3=Block(256,256,1,2,start_with_relu=True,grow_first=True)
 
-        self.block12=Block(728,1024,1,2,start_with_relu=True,grow_first=False)
+        self.block12=Block(256,512,1,2,start_with_relu=True,grow_first=False)
 
-        self.conv3 = SeparableConv2d(1024,1536,1,1,1)
-        self.bn3 = nn.BatchNorm2d(1536)
+        self.conv3 = SeparableConv2d(512,512,1,1,1)
+        self.bn3 = nn.BatchNorm2d(512)
 
-        #do relu here
-        self.conv4 = SeparableConv2d(1536,2048,1,1,1)
-        self.bn4 = nn.BatchNorm2d(2048)
+        self.conv4 = SeparableConv2d(512,512,1,1,1)
+        self.bn4 = nn.BatchNorm2d(512)
 
-        self.fc = nn.Linear(2048, num_classes)
+        self.fc = nn.Linear(512, num_classes)
 
         #------- init weights --------
         for m in self.modules():
