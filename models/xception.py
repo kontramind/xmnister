@@ -111,7 +111,7 @@ class Xception(nn.Module):
         
         self.num_classes = num_classes
 
-        self.conv1 = nn.Conv2d(3, 32, 3, 2, 0, bias=False)
+        self.conv1 = nn.Conv2d(1, 32, 3, 2, 0, bias=False)
         self.bn1 = nn.BatchNorm2d(32)
         self.relu = nn.ReLU(inplace=True)
 

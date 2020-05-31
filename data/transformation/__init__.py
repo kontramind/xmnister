@@ -33,8 +33,11 @@ class ImgAugTransform:
 #                              T.ToTensor()])
 
 val_transform = T.Compose([T.Resize((129, 129)),
+                           T.Grayscale(),
                            T.ToTensor()])
 
 train_transform = T.Compose([T.Resize(((129, 129))),
                              ImgAugTransform(),
+                             T.ToPILImage(),
+                             T.Grayscale(),
                              T.ToTensor()])
