@@ -117,21 +117,10 @@ class Xception(nn.Module):
 
         self.conv2 = nn.Conv2d(32,64,3,bias=False)
         self.bn2 = nn.BatchNorm2d(64)
-        #do relu here
 
         self.block1=Block(64,128,1,2,start_with_relu=False,grow_first=True)
         self.block2=Block(128,256,1,2,start_with_relu=True,grow_first=True)
         self.block3=Block(256,728,1,2,start_with_relu=True,grow_first=True)
-
-        # self.block4=Block(512,512,1,1,start_with_relu=True,grow_first=True)
-        # self.block5=Block(728,728,3,1,start_with_relu=True,grow_first=True)
-        # self.block6=Block(728,728,3,1,start_with_relu=True,grow_first=True)
-        # self.block7=Block(728,728,3,1,start_with_relu=True,grow_first=True)
-
-        # self.block8=Block(728,728,3,1,start_with_relu=True,grow_first=True)
-        # self.block9=Block(728,728,3,1,start_with_relu=True,grow_first=True)
-        # self.block10=Block(728,728,3,1,start_with_relu=True,grow_first=True)
-        # self.block11=Block(728,728,3,1,start_with_relu=True,grow_first=True)
 
         self.block12=Block(728,1024,1,2,start_with_relu=True,grow_first=False)
 
@@ -144,20 +133,14 @@ class Xception(nn.Module):
 
         self.fc = nn.Linear(2048, num_classes)
 
-
-
         #------- init weights --------
         for m in self.modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
                 nn.init.kaiming_uniform_(m.weight)
-                # nn.init.zeros_(m.bias)
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
         #-----------------------------
-
-
-
 
 
     def forward(self, x):
@@ -172,14 +155,6 @@ class Xception(nn.Module):
         x = self.block1(x)
         x = self.block2(x)
         x = self.block3(x)
-        # x = self.block4(x)
-        # x = self.block5(x)
-        # x = self.block6(x)
-        # x = self.block7(x)
-        # x = self.block8(x)
-        # x = self.block9(x)
-        # x = self.block10(x)
-        # x = self.block11(x)
         x = self.block12(x)
         
         x = self.conv3(x)
