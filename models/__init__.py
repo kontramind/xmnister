@@ -1,2 +1,2 @@
-from .MyCNN import MyCNN
 from .resnet import resnet9
+from .xception import xception

@@ -16,7 +16,7 @@ from callbacks import CometCallback
 
 from utils import show_dl
 from Project import Project
-from models import resnet9
+from models import resnet9, xception
 import torch.optim as optim
 from data import get_dataloaders
 from torchsummary import summary
@@ -41,7 +41,8 @@ def _args() -> argparse.Namespace:
 
 
 def _scrap() -> None:
-    pass
+    cnn = xception(num_classes=len(project.labels), pretrained=False).to(device)
+    logging.info(summary(cnn, (3, 129, 129)))
 
 
 def _summary() -> None:
@@ -49,7 +50,6 @@ def _summary() -> None:
     cnn = resnet9(len(project.labels)).to(device)
     # print the model summary to show useful information
     logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
-    pass
 
 
 def _data_inspect(usage: str) -> None:
@@ -59,7 +59,7 @@ def _data_inspect(usage: str) -> None:
         test_dir=project.data_dir / "test",
         val_transform=val_transform,
         train_transform=train_transform,
-        batch_size=64,
+        batch_size=8,
         pin_memory=True,
         num_workers=4,
     )
@@ -75,9 +75,9 @@ def _train() -> None:
     # our hyperparameters
     params = {
         'lr': 0.001,
-        'batch_size': 128,
+        'batch_size': 2*128,
         'epochs': 21,
-        'model': 'resnet9'
+        'model': 'xception'
     }
 
     logging.info(f'Using device={device} 🚀')
@@ -98,9 +98,9 @@ def _train() -> None:
     experiment.log_parameters(params)
 
     # create the model
-    cnn = resnet9(len(project.labels)).to(device)
+    cnn = xception(num_classes=len(project.labels), pretrained=False).to(device)
     # print the model summary to show useful information
-    logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
+    logging.info(summary(cnn, (3, 129, 129)))
     # define custom optimizer and instantiace the trainer `Model`
     optimizer = optim.Adam(cnn.parameters(), lr=params['lr'])
     model = Model(cnn, optimizer, "cross_entropy", batch_metrics=["accuracy"])

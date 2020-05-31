@@ -22,12 +22,19 @@ class ImgAugTransform:
         return img
 
 
-val_transform = T.Compose([T.Resize((Project().input_width, Project().input_height)),
-                           T.Grayscale(),
+# val_transform = T.Compose([T.Resize((Project().input_width, Project().input_height)),
+#                            T.Grayscale(),
+#                            T.ToTensor()])
+
+# train_transform = T.Compose([T.Resize(((Project().input_width, Project().input_height))),
+#                              ImgAugTransform(),
+#                              T.ToPILImage(),
+#                              T.Grayscale(),
+#                              T.ToTensor()])
+
+val_transform = T.Compose([T.Resize((129, 129)),
                            T.ToTensor()])
 
-train_transform = T.Compose([T.Resize(((Project().input_width, Project().input_height))),
+train_transform = T.Compose([T.Resize(((129, 129))),
                              ImgAugTransform(),
-                             T.ToPILImage(),
-                             T.Grayscale(),
                              T.ToTensor()])
