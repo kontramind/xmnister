@@ -36,6 +36,14 @@ def _args() -> argparse.Namespace:
         nargs=1,
         choices=project.cli_commands,
     ).completer=ChoicesCompleter(project.cli_commands)
+    parser.add_argument(
+        "--arch",
+        help="model architecture",
+        type=str,
+        required=True,
+        nargs=1,
+        choices=('resnet', 'xception'),
+    ).completer=ChoicesCompleter(('resnet', 'xception'))
     argcomplete.autocomplete(parser)
     return parser.parse_args()
 
@@ -45,11 +53,13 @@ def _scrap() -> None:
     logging.info(summary(cnn, (1, 129, 129)))
 
 
-def _summary() -> None:
-    # create our special resnet9
-    cnn = resnet9(len(project.labels)).to(device)
-    # print the model summary to show useful information
-    logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
+def _summary(arch:str) -> None:
+    if arch == "resnet":
+        cnn = resnet9(len(Project().labels)).to(device)
+        logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
+    elif arch == "xception":
+        cnn = xception(num_classes=len(Project().labels), pretrained=False).to(device)
+        logging.info(summary(cnn, (1, 129, 129)))
 
 
 def _data_inspect(usage: str) -> None:
@@ -71,13 +81,13 @@ def _data_inspect(usage: str) -> None:
         show_dl(val_dl)
 
 
-def _train() -> None:
+def _train(arch: str) -> None:
     # our hyperparameters
     params = {
         'lr': 0.001,
         'batch_size': 2*128,
         'epochs': 21,
-        'model': 'xception'
+        'model': arch
     }
 
     logging.info(f'Using device={device} 🚀')
@@ -86,8 +96,8 @@ def _train() -> None:
         train_dir=project.data_dir / "train",
         val_dir=project.data_dir / "val",
         test_dir=project.data_dir / "test",
-        val_transform=val_transform,
-        train_transform=train_transform,
+        val_transform=val_transform(arch),
+        train_transform=train_transform(arch),
         batch_size=params['batch_size'],
         pin_memory=True,
         num_workers=4,
@@ -98,9 +108,14 @@ def _train() -> None:
     experiment.log_parameters(params)
 
     # create the model
-    cnn = xception(num_classes=len(project.labels), pretrained=False).to(device)
-    # print the model summary to show useful information
-    logging.info(summary(cnn, (1, 129, 129)))
+    if arch == "resnet":
+        cnn = resnet9(len(project.labels)).to(device)
+        logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
+    elif arch == "xception":
+        cnn = xception(num_classes=len(project.labels), pretrained=False).to(device)
+        logging.info(summary(cnn, (1, 129, 129)))
+
+    (project.checkpoint_dir/arch).mkdir(exist_ok=True)
     # define custom optimizer and instantiace the trainer `Model`
     optimizer = optim.Adam(cnn.parameters(), lr=params['lr'])
     model = Model(cnn, optimizer, "cross_entropy", batch_metrics=["accuracy"])
@@ -108,7 +123,7 @@ def _train() -> None:
     # usually you want to reduce the lr on plateau and store the best model
     callbacks = [
         ReduceLROnPlateau(monitor="val_acc", patience=5, verbose=True),
-        ModelCheckpoint(str(project.checkpoint_dir / f"{time.time()}-model.pt"), save_best_only="True", verbose=True),
+        ModelCheckpoint(str(project.checkpoint_dir / arch / f"{time.time()}-model.pt"), save_best_only="True", verbose=True),
         EarlyStopping(monitor="val_acc", patience=10, mode='max'),
         CometCallback(experiment)
     ]
@@ -123,8 +138,8 @@ def _train() -> None:
         train_dir=project.data_dir / "train",
         val_dir=project.data_dir / "val",
         test_dir=project.data_dir / "test",
-        val_transform=val_transform,
-        train_transform=train_transform,
+        val_transform=val_transform(arch),
+        train_transform=train_transform(arch),
         batch_size=params['batch_size'],
         pin_memory=True,
         num_workers=1,
@@ -135,25 +150,27 @@ def _train() -> None:
     experiment.log_metric('test_acc', test_acc)
 
 
-def _test() -> None:
+def _test(arch:str) -> None:
     # our hyperparameters
     params = {
         'lr': 0.001,
-        'batch_size': 128,
+        'batch_size': 2*128,
         'epochs': 1,
-        'model': 'resnet9'
+        'model': arch
     }
 
     logging.info(f'Using device={device} 🚀')
 
     project = Project()
-    checkpoints = sorted(project.checkpoint_dir.iterdir(), key=os.path.getmtime)
+    checkpoints = sorted((project.checkpoint_dir / arch).iterdir(), key=os.path.getmtime)
     print(f"{checkpoints[-1]:}")
-    # create the model
-    cnn = resnet9(len(project.labels)).to(device)
-    # print the model summary to show useful information
-    logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
-    # define custom optimizer and instantiace the trainer `Model`
+    if arch == "resnet":
+        cnn = resnet9(len(project.labels)).to(device)
+        logging.info(summary(cnn, (1, Project().input_width, Project().input_height)))
+    elif arch == "xception":
+        cnn = xception(num_classes=len(project.labels), pretrained=False).to(device)
+        logging.info(summary(cnn, (1, 129, 129)))
+
     optimizer = optim.Adam(cnn.parameters(), lr=params['lr'])
     model = Model(cnn, optimizer, "cross_entropy", batch_metrics=["accuracy"])
     model.to(device)
@@ -162,8 +179,8 @@ def _test() -> None:
         train_dir=project.data_dir / "train",
         val_dir=project.data_dir / "val",
         test_dir=project.data_dir / "test",
-        val_transform=val_transform,
-        train_transform=train_transform,
+        val_transform=val_transform(arch),
+        train_transform=train_transform(arch),
         batch_size=params['batch_size'],
         pin_memory=True,
         num_workers=1,
@@ -200,7 +217,9 @@ if __name__ == '__main__':
     args = _args()
     project = Project()
 
+    logging.info(f"{args:}")
     run_cmd = args.run[0]
+    arch_param = args.arch[0]
     if run_cmd == "data-download":
         data_download()
     elif run_cmd == "data-preprocess":
@@ -212,12 +231,12 @@ if __name__ == '__main__':
     elif run_cmd == "data-inspect-val":
         _data_inspect("val")
     elif run_cmd == "summary":
-        _summary()
+        _summary(arch_param)
     elif run_cmd == "train":
-        _train()
+        _train(arch_param)
     elif run_cmd == "test":
-        _test()
-    elif run_cmd == "infere":
-        _infere()
-    elif run_cmd == "scrap":
-        _scrap()
+        _test(arch_param)
+    # elif run_cmd == "infere":
+    #     _infere()
+    # elif run_cmd == "scrap":
+    #     _scrap()
